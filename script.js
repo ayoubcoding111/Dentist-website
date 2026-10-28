@@ -283,8 +283,9 @@ makeInfiniteCarousel(
   });
 })();
 
-// Task 6.1: RDV form (front-end only)
+// Task 6.1: RDV form: validates, then opens WhatsApp with the request prefilled
 (function () {
+  var WHATSAPP_NUMBER = "213559053879"; // clinic WhatsApp, international format without "+"
   var form = document.getElementById("rdvForm");
   var note = document.getElementById("formNote");
   if (!form) return;
@@ -293,16 +294,27 @@ makeInfiniteCarousel(
     var nom = form.nom.value.trim();
     var tel = form.tel.value.trim();
     var date = form.date.value;
+    var message = form.message.value.trim();
     var isAr = document.documentElement.lang === "ar";
     if (!nom || !tel || !date) {
       note.textContent = isAr ? "يرجى ملء الاسم والهاتف والتاريخ." : "Veuillez remplir le nom, le téléphone et la date.";
       note.classList.add("error");
       return;
     }
+    var phone = form.indicatif.value + " " + tel.replace(/^0+/, "");
+    var day = date.split("-").reverse().join("/");
+    var lines = isAr
+      ? ["مرحبًا، أود حجز موعد في عيادة Pacific Dental.", "الاسم: " + nom, "الهاتف: " + phone, "التاريخ المطلوب: " + day]
+      : ["Bonjour, je souhaite prendre rendez-vous à la clinique Pacific Dental.", "Nom : " + nom, "Téléphone : " + phone, "Date souhaitée : " + day];
+    if (message) lines.push((isAr ? "الرسالة: " : "Message : ") + message);
+    var url = "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(lines.join("\n"));
     note.classList.remove("error");
     note.textContent = isAr
-      ? "شكرًا " + nom + " ! تم استلام طلبك ليوم " + date + ". سنتصل بك على " + tel + " للتأكيد."
-      : "Merci " + nom + " ! Votre demande pour le " + date + " a bien été reçue. Nous vous appellerons au " + tel + " pour confirmer.";
+      ? "شكرًا " + nom + " ! سيفتح واتساب مع طلب موعدك ليوم " + day + ": اضغط إرسال لإرساله إلى العيادة."
+      : "Merci " + nom + " ! WhatsApp s'ouvre avec votre demande de rendez-vous du " + day + " : appuyez sur Envoyer pour la transmettre à la clinique.";
+    var win = window.open(url, "_blank");
+    if (win) win.opener = null;
+    else window.location.href = url;
     form.reset();
   });
 })();
